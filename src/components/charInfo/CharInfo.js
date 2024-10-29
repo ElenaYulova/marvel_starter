@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect} from 'react';
+import { Link, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
 
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import Skeleton from '../skeleton/Skeleton';
@@ -11,41 +12,25 @@ import './charInfo.scss';
 const CharInfo = (props) => {
 
     const [char, setChar] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(false);
 
-    const marvelService = new MarvelService();
+    const {loading, error, getCharacter, clearError} = useMarvelService();
 
     useEffect(() => {
         updateChar();
     }, [props.charId])
 
     const onCharLoaded = (char) => {
-        setLoading(false);
         setChar(char);
-
     }
     
-    const onCharLoading = () => {
-        setLoading(true);
-    }
-
-    const onError = () => {
-        setLoading(false);
-        setError(true);
-    }
-
     const updateChar = () => {
+        clearError();
         const {charId} = props;
 
         if (!charId) return;
 
-        onCharLoading();
-
-        marvelService
-            .getCharacter(charId)
-            .then(onCharLoaded)
-            .catch(onError)
+        getCharacter(charId)
+            .then(onCharLoaded);
     }
 
     const skeleton = char || loading || error ? null : <Skeleton />;
@@ -94,13 +79,16 @@ const View = ({char}) => {
                     comics.map((item, i) => {
                         // eslint-disable-next-line
                         if (i > 9) return;
+                        const comicId = item.resourceURI.match(/(\d{3,5})/gi).join('')
                         return(
-                            <li 
+                            <Link 
+                                to={`/comics/${comicId}`}
                                 className="char__comics-item"
                                 key={i}
                             >
                                 {item.name}
-                            </li>
+                                 
+                            </Link>
                         )
                     })
                 }

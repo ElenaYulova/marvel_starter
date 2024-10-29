@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 
@@ -10,34 +10,23 @@ import './charList.scss';
 const CharList = (props) => {
 
     const [charList, setCharList] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
     const [newItemsLoading, setNewItemsLoading] = useState(false);
     const [offset, setOffset] = useState(210);
     const [charListEnded, setCharListEnded] = useState(false);
 
-    const marvelService = new MarvelService();
+    const {loading, error, getAllCharacters, clearError} = useMarvelService();
 
-
-    const onRequest = (offset) => {
-        onCharListLoading();
-         marvelService.getAllCharacters(offset)
-            .then(onCharListLoaded)
-            .catch(onError);
+    const onRequest = (offset, initial) => {
+        clearError();
+        initial ? setNewItemsLoading(false) : setNewItemsLoading(true);
+        getAllCharacters(offset)
+            .then(onCharListLoaded);
     }
 
     useEffect(() => {
-        onRequest();
+        onRequest(offset, true);
     }, [])
 
-    const onCharListLoading = () => {
-        setNewItemsLoading(true);
-    }
-
-    const onError = () => {
-        setLoading(false);
-        setError(true);
-    }
 
     const onCharListLoaded = (newCharList) => {
         let ended = false;
@@ -46,7 +35,6 @@ const CharList = (props) => {
         }
 
         setCharList(charList => [...charList, ...newCharList]);
-        setLoading(loading => false);
         setNewItemsLoading(newItemsLoading => false);
         setOffset(offset => offset + 9);
         setCharListEnded(charListEnded => ended);
@@ -67,7 +55,7 @@ const CharList = (props) => {
             return (
                 <li 
                     ref={el => itemRefs.current[i] = el}
-                    key={item.id} 
+                    key={i} 
                     className="char__item"
                     tabIndex={0}
                     onClick={() => {
@@ -97,15 +85,13 @@ const CharList = (props) => {
 
     let chars = renderCharList(charList);
     const errorMessage = error ? <ErrorMessage /> : null;
-    const spinner = loading ? <Spinner /> : null;
-    const content = !(loading || error) ? chars : null;
-
+    const spinner = loading && !newItemsLoading ? <Spinner /> : null;
     return (    
         <div className="char__list">
 
             {errorMessage}
             {spinner}
-            {content}
+            {chars}
 
             <button 
                 className="button button__main button__long"
